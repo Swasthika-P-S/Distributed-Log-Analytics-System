@@ -1,0 +1,79 @@
+# Kafka Producer Configuration for Person 1
+
+kafka:
+  # Broker addresses (update with Person 2's Kafka cluster IPs during integration)
+  bootstrap_servers:
+    - "kafka:29092"  # Docker internal
+    - "localhost:9092"  # External access
+  
+  # Topic configuration
+  topics:
+    web_server: "logs-web-server"
+    database: "logs-database"
+    api_gateway: "logs-api-gateway"
+    auth_service: "logs-auth-service"
+  
+  # Producer settings for reliability
+  producer_config:
+    # Acknowledgment level: 'all' ensures all replicas acknowledge
+    acks: "all"
+    
+    # Retry settings
+    retries: 3
+    retry_backoff_ms: 100
+    
+    # Batching for efficiency
+    batch_size: 16384  # 16KB
+    linger_ms: 10  # Wait up to 10ms to batch messages
+    
+    # Compression
+    compression_type: "gzip"  # Options: gzip, snappy, lz4, none
+    
+    # Buffer settings
+    buffer_memory: 33554432  # 32MB
+    max_block_ms: 60000  # 60 seconds
+
+# Log generation settings
+log_generation:
+  # Rate control (logs per second per service)
+  rate_per_service: 5
+  
+  # Service weights (probability distribution)
+  service_weights:
+    web_server: 0.4
+    database: 0.2
+    api_gateway: 0.3
+    auth_service: 0.1
+  
+  # Log level distribution
+  level_distribution:
+    DEBUG: 0.1
+    INFO: 0.6
+    WARNING: 0.2
+    ERROR: 0.08
+    CRITICAL: 0.02
+
+# Service simulation settings
+services:
+  web_server:
+    enabled: true
+    endpoints:
+      - "/api/users"
+      - "/api/products"
+      - "/api/orders"
+      - "/health"
+      - "/metrics"
+    status_codes: [200, 201, 400, 404, 500, 503]
+  
+  database:
+    enabled: true
+    operations: ["SELECT", "INSERT", "UPDATE", "DELETE"]
+    tables: ["users", "products", "orders", "sessions"]
+  
+  api_gateway:
+    enabled: true
+    routes: ["auth", "payment", "notification", "analytics"]
+  
+  auth_service:
+    enabled: true
+    events: ["login", "logout", "token_refresh", "password_reset"]
