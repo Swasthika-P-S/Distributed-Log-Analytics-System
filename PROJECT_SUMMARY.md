@@ -1,112 +1,84 @@
 # 📝 Project Files Summary
 
-## Total Files Created: 27
-
-### Root Directory (6 files)
-- ✅ README.md - Main project documentation
-- ✅ QUICK_START.md - Quick reference guide
-- ✅ setup-git-branches.ps1 - Git setup script (Windows)
-- ✅ setup-git-branches.sh - Git setup script (Linux/Mac)
-
-### 1-basic-setup/ (3 files)
-- ✅ README.md
-- ✅ docker-compose.yml
-- ✅ test-connection.py
-
-### 2-kafka-producer-consumer/ (8 files)
-- ✅ README.md
-- ✅ docker-compose.yml
-- ✅ producer/Dockerfile
-- ✅ producer/producer.py
-- ✅ producer/requirements.txt
-- ✅ consumer/Dockerfile
-- ✅ consumer/consumer.py
-- ✅ consumer/requirements.txt
-- ✅ storage/logs/.gitkeep
-
-### 3-spark-batch-processing/ (5 files)
-- ✅ README.md
-- ✅ docker-compose.yml
-- ✅ spark-app/Dockerfile
-- ✅ spark-app/batch_analysis.py
-- ✅ data/sample_logs.txt
-
-### 4-window-streaming/ (7 files)
-- ✅ README.md
-- ✅ docker-compose.yml
-- ✅ producer/Dockerfile
-- ✅ producer/producer.py
-- ✅ producer/requirements.txt
-- ✅ spark-streaming/Dockerfile
-- ✅ spark-streaming/window_processing.py
+## Total Files Created: 58
 
 ---
 
-## 🎯 What Each Component Does
+### Root Docker Stack — 3 Dockerised Systems
 
-### Component 1: Basic Setup
-**Purpose:** Foundation setup to verify Kafka infrastructure  
-**Key Files:** docker-compose.yml, test-connection.py  
-**Branch:** basic-setup
-
-### Component 2: Producer-Consumer
-**Purpose:** Implement producer-consumer streaming model  
-**Algorithm:** Asynchronous message streaming via Kafka  
-**Key Files:** producer.py, consumer.py  
-**Branch:** kafka-integration
-
-### Component 3: Batch Processing
-**Purpose:** Perform batch analysis on log data  
-**Algorithm:** Apache Spark batch processing  
-**Key Files:** batch_analysis.py  
-**Branch:** spark-batch
-
-### Component 4: Window Streaming
-**Purpose:** Real-time stream processing with window algorithms  
-**Algorithms:**
-  - Tumbling Windows (1 min, non-overlapping)
-  - Sliding Windows (2 min window, 30 sec slide)
-  - Real-time error alerts
-  - Live statistics aggregation
-**Key Files:** window_processing.py  
-**Branch:** window-algorithm
+| Service | Directory | Role |
+|---|---|---|
+| **System 1** – Producer | `producer/` | Kafka log event emitter |
+| **System 2** – Consumer | `consumer/` | Log receiver + file writer |
+| **System 3** – Spark | `spark/` | Batch log analyser |
+| Infrastructure | `docker-compose.yml` | Orchestrates all 3 |
 
 ---
 
-## 🚀 Next Steps for You
+### Component 4 — Window-based Stream Processing ✅
 
-1. **Test Basic Setup:**
-   ```bash
-   cd "1-basic-setup"
-   docker-compose up -d
-   python test-connection.py
-   ```
+**Branch:** `window-algorithm`
 
-2. **Run Git Setup Script:**
-   ```bash
-   .\setup-git-branches.ps1
-   ```
+| Algorithm | Config | Purpose |
+|---|---|---|
+| Tumbling Window | 1 min, non-overlapping | Per-minute log count per service/level |
+| Sliding Window | 2 min / 30 s slide | Rolling avg latency + error rate % |
+| Watermark | 30 s tolerance | Late event handling |
+| Error Alerts | foreachBatch | Instant alert on every ERROR |
 
-3. **Add Remote and Push:**
-   ```bash
-   git remote add origin <your-repo-url>
-   git push -u origin --all
-   ```
-
-4. **Test Each Component:**
-   - Follow instructions in each folder's README.md
-   - Or use QUICK_START.md for commands
+**Files:** `4-window-streaming/` (8 files: producer, spark-streaming, docker-compose, README)  
+**Detailed Analysis:** [WINDOW_ALGORITHM_REPORT.md](WINDOW_ALGORITHM_REPORT.md)
 
 ---
 
-## 📚 Documentation Available
+### Component 5 — Fault Tolerance ✅
 
-1. **README.md** - Comprehensive project overview
-2. **QUICK_START.md** - Quick command reference
-3. **walkthrough.md** (artifact) - Detailed walkthrough
-4. **task.md** (artifact) - Task breakdown
-5. Individual READMEs in each folder
+**Branch:** `fault-tolerance`
+
+| Layer | Mechanism |
+|---|---|
+| Kafka Cluster | 3 brokers (kafka-1/2/3), RF=3, minISR=2 |
+| Producer | `acks=all`, `enable_idempotence=True`, `retries=10` |
+| Consumer Group | 2 instances, manual offset commit, auto-rebalance |
+| Dead-Letter Queue | Bad messages → `logs-dlq` → `dlq_handler` |
+| Spark Streaming | Checkpoint recovery, `failOnDataLoss=False`, HA brokers |
+| Chaos Testing | `chaos_test.py` validates all 4 fault scenarios |
+
+**Files:** `5-fault-tolerance/` (16 files: producer, consumer, dlq_handler, spark-streaming, chaos, docker-compose, README)
 
 ---
 
-**Status: ✅ All components ready for use!**
+## 🚀 How to Run
+
+### Stage 4 — Window Streaming
+```powershell
+cd "d:\sem6\distributed sys\case study\4-window-streaming"
+docker-compose up --build
+docker-compose logs -f spark-streaming
+```
+
+### Stage 5 — Fault Tolerance
+```powershell
+cd "d:\sem6\distributed sys\case study\5-fault-tolerance"
+docker-compose up --build
+# Kill a broker to test resilience:
+docker stop kafka-2
+docker-compose logs -f ft-producer   # should keep sending
+docker start kafka-2
+```
+
+---
+
+## 🗺️ Git Branches
+
+| Branch | Component |
+|---|---|
+| `basic-setup` | Infrastructure verification |
+| `kafka-integration` | Producer-Consumer model |
+| `spark-batch` | Spark batch processing |
+| `window-algorithm` | Window-based stream processing |
+| `fault-tolerance` | ⭐ Fault tolerance (current stage) |
+
+---
+
+**Status: ✅ Stage 4 (Window Streaming) + Stage 5 (Fault Tolerance) Complete**

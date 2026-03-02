@@ -1,0 +1,241 @@
+# version: "3.8" - obsolete
+
+# ═══════════════════════════════════════════════════════════════════════
+#  5-fault-tolerance  –  Fault-Tolerant Distributed Log Analytics
+#
+#  Kafka Cluster: 3 brokers  (kafka-1, kafka-2, kafka-3)
+#  Replication Factor: 3   |   minISR: 2
+#
+#  Services
+#  ────────
+#  zookeeper       – Kafka co-ordinator
+#  kafka-1/2/3     – 3-broker Kafka cluster
+#  kafka-init      – Creates topics: logs (RF=3) and logs-dlq (RF=3)
+#  ft-producer     – Fault-tolerant producer (acks=all, idempotent, retries)
+#  ft-consumer-1   – Consumer instance 1 in group ft-log-consumers
+#  ft-consumer-2   – Consumer instance 2 in group ft-log-consumers
+#  dlq-handler     – Monitors dead-letter queue, writes dlq_events.log
+#  ft-spark        – PySpark Structured Streaming with checkpoint recovery
+# ═══════════════════════════════════════════════════════════════════════
+
+x-kafka-common-env: &kafka-common
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+  KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  KAFKA_DEFAULT_REPLICATION_FACTOR: "3"
+  KAFKA_MIN_INSYNC_REPLICAS: "2"
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+  KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+  KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+  KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false" # topics created by kafka-init only
+  KAFKA_LOG_RETENTION_HOURS: "2"
+
+services:
+
+  # ── Zookeeper ─────────────────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper-ft
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo ruok | nc localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+  # ── Kafka Broker 1 ────────────────────────────────────────────────────
+  kafka-1:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      <<: *kafka-common
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:29092,PLAINTEXT_HOST://localhost:9092
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    restart: on-failure
+
+  # ── Kafka Broker 2 ────────────────────────────────────────────────────
+  kafka-2:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-2
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9093:9093"
+    environment:
+      <<: *kafka-common
+      KAFKA_BROKER_ID: 2
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:29093,PLAINTEXT_HOST://localhost:9093
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9093" ]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    restart: on-failure
+
+  # ── Kafka Broker 3 ────────────────────────────────────────────────────
+  kafka-3:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-3
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9094:9094"
+    environment:
+      <<: *kafka-common
+      KAFKA_BROKER_ID: 3
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:29094,PLAINTEXT_HOST://localhost:9094
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9094" ]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    restart: on-failure
+
+  # ── Topic Initializer (one-shot) ──────────────────────────────────────
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-ft-init
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+    entrypoint: [ "/bin/bash", "-c" ]
+    command:
+      - |
+        echo 'Creating topics with RF=3, minISR=2 ...'
+        kafka-topics --create \
+          --bootstrap-server kafka-1:29092 \
+          --topic logs \
+          --partitions 6 \
+          --replication-factor 3 \
+          --config min.insync.replicas=2 \
+          --if-not-exists
+        kafka-topics --create \
+          --bootstrap-server kafka-1:29092 \
+          --topic logs-dlq \
+          --partitions 3 \
+          --replication-factor 3 \
+          --if-not-exists
+        echo 'Topics created:'
+        kafka-topics --list --bootstrap-server kafka-1:29092
+    restart: "no"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Fault-Tolerant Producer  (acks=all, idempotent, retries=10)
+  # ═══════════════════════════════════════════════════════════════════════
+  ft-producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: ft-producer
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BROKERS: "kafka-1:29092,kafka-2:29093,kafka-3:29094"
+      KAFKA_TOPIC: logs
+      SEND_INTERVAL: "1.0"
+    restart: on-failure
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Consumer Instance 1  (consumer group: ft-log-consumers)
+  # ═══════════════════════════════════════════════════════════════════════
+  ft-consumer-1:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: ft-consumer-1
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./storage/logs:/app/logs
+    environment:
+      KAFKA_BROKERS: "kafka-1:29092,kafka-2:29093,kafka-3:29094"
+      KAFKA_TOPIC: logs
+      DLQ_TOPIC: logs-dlq
+      GROUP_ID: ft-log-consumers
+      CONSUMER_ID: consumer-1
+    restart: on-failure
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Consumer Instance 2  (same consumer group — auto-rebalances on failure)
+  # ═══════════════════════════════════════════════════════════════════════
+  ft-consumer-2:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: ft-consumer-2
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./storage/logs:/app/logs
+    environment:
+      KAFKA_BROKERS: "kafka-1:29092,kafka-2:29093,kafka-3:29094"
+      KAFKA_TOPIC: logs
+      DLQ_TOPIC: logs-dlq
+      GROUP_ID: ft-log-consumers
+      CONSUMER_ID: consumer-2
+    restart: on-failure
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Dead-Letter Queue Handler
+  # ═══════════════════════════════════════════════════════════════════════
+  dlq-handler:
+    build:
+      context: ./dlq_handler
+      dockerfile: Dockerfile
+    container_name: dlq-handler
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./storage/dlq:/dlq
+    environment:
+      KAFKA_BROKERS: "kafka-1:29092,kafka-2:29093,kafka-3:29094"
+      DLQ_TOPIC: logs-dlq
+      DLQ_LOG_DIR: /dlq
+      PRINT_EVERY: "5"
+    restart: on-failure
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Fault-Tolerant Spark Structured Streaming
+  # ═══════════════════════════════════════════════════════════════════════
+  ft-spark:
+    build:
+      context: ./spark-streaming
+      dockerfile: Dockerfile
+    container_name: ft-spark-streaming
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      ft-producer:
+        condition: service_started
+    volumes:
+      - ./storage/checkpoints:/tmp/checkpoints # persisted checkpoints survive restarts
+    environment:
+      KAFKA_BROKERS: "kafka-1:29092,kafka-2:29093,kafka-3:29094"
+      KAFKA_TOPIC: logs
+      CHECKPOINT_DIR: /tmp/checkpoints
+    restart: on-failure

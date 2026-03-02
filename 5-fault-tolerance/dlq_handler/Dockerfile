@@ -1,12 +1,7 @@
 FROM python:3.9-slim
-
-LABEL description="Kafka Log Producer"
-
+LABEL description="Dead-Letter Queue Handler"
 WORKDIR /app
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-COPY producer.py .
-
-CMD ["python", "-u", "producer.py"]
+COPY dlq_handler.py .
+CMD ["python", "-u", "dlq_handler.py"]

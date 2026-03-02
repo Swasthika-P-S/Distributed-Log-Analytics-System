@@ -1,18 +1,42 @@
+# version: "3.8" - obsolete
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Distributed Log Analytics System  –  Root Docker Compose
+#
+#  3 Dockerised Systems:
+#    1. producer       – Kafka log event producer (Python)
+#    2. consumer       – Kafka log event consumer + file writer (Python)
+#    3. spark          – Spark batch analyser (PySpark)
+#
+#  Infrastructure:
+#    • zookeeper  – Kafka co-ordinator
+#    • kafka      – Message broker
+# ═══════════════════════════════════════════════════════════════════════
+
 services:
-  # Zookeeper (required by Kafka)
+
+  # ── Zookeeper ────────────────────────────────────────────────────────
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo ruok | nc localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Kafka Broker
+  # ── Kafka Broker ─────────────────────────────────────────────────────
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -22,35 +46,57 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
+      interval: 15s
+      timeout: 10s
+      retries: 8
 
-  # Log Producer
+  # ══════════════════════════════════════════════════════════════════════
+  # SYSTEM 1  –  Log Producer
+  # ══════════════════════════════════════════════════════════════════════
   producer:
-    build: ./producer
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: log-producer
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     environment:
       KAFKA_BROKER: kafka:29092
+    restart: on-failure
 
-  # Log Consumer
+  # ══════════════════════════════════════════════════════════════════════
+  # SYSTEM 2  –  Log Consumer
+  # ══════════════════════════════════════════════════════════════════════
   consumer:
-    build: ./consumer
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: log-consumer
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     volumes:
-      - ./storage/logs:/app/logs
+      - ./storage/logs:/app/logs # persisted log files
     environment:
       KAFKA_BROKER: kafka:29092
+    restart: on-failure
 
-  # Spark
+  # ══════════════════════════════════════════════════════════════════════
+  # SYSTEM 3  –  Spark Batch Analyser
+  # Reads accumulated logs from shared volume and prints analysis report
+  # ══════════════════════════════════════════════════════════════════════
   spark:
-    image: bitnamilegacy/spark:3.5
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    container_name: spark-analyser
     depends_on:
-      - kafka
+      consumer:
+        condition: service_started
     volumes:
-      - ./spark:/app
-      - ./storage/logs:/logs
-    environment:
-      - SPARK_MODE=master
-    ports:
-      - "8080:8080"
-      - "7077:7077"
+      - ./storage/logs:/logs # reads logs written by consumer
+    restart: on-failure
