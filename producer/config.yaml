@@ -3,8 +3,9 @@
 kafka:
   # Broker addresses (update with Person 2's Kafka cluster IPs during integration)
   bootstrap_servers:
-    - "kafka:29092"  # Docker internal
-    - "localhost:9092"  # External access
+    - "172.16.244.172:9092"
+    - "172.16.244.172:9093"
+    - "172.16.244.172:9094"
   
   # Topic configuration (Phase 0 Agreement: Use a single topic with 3 partitions)
   topic: "service-logs"
