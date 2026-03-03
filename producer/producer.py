@@ -138,10 +138,9 @@ def main():
     kafka_producer = KafkaProducerWrapper(config)
     
     # Get enabled services
-    services_config = config['services']
     enabled_services = {
         name: svc_config 
-        for name, svc_config in services_config.items() 
+        for name, svc_config in config['services'].items() 
         if svc_config.get('enabled', True)
     }
     

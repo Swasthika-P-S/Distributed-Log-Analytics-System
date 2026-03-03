@@ -49,8 +49,8 @@ class KafkaProducerWrapper:
             logger.error(f"❌ Failed to initialize Kafka producer: {e}")
             raise
         
-        # Topics mapping
-        self.topics = kafka_config['topics']
+        # Topic mapping from Phase 0
+        self.topic = kafka_config['topic']
         
         # Statistics
         self.stats = {
@@ -72,11 +72,10 @@ class KafkaProducerWrapper:
             bool: True if sent successfully, False otherwise
         """
         try:
-            # Get topic for service
-            topic = self.topics.get(service_name, 'logs-default')
-            
-            # Use service name as key for partitioning
-            key = service_name
+            # Phase 0 Agreement: Use service name as key for partitioning
+            # This ensures all logs from the same service go to the same partition
+            key = self.config['kafka']['service_keys'].get(service_name, service_name)
+            topic = self.config['kafka']['topic']
             
             # Send to Kafka with callback
             future = self.producer.send(

@@ -13,7 +13,10 @@ This is the **Kafka Producer System** component for the distributed log analytic
 - **Configurable Settings**: YAML-based configuration
 - **Error Handling & Retries**: Robust error management
 - **Statistics Tracking**: Real-time metrics on logs sent
-- **Graceful Shutdown**: Proper cleanup on exit
+### 🟢 Phase 0 Aligned (Team Standardization)
+- **Unified Topic:** `service-logs`
+- **Partitioning:** Key-based by `service_name`
+- **Schema:** Standardized JSON
 
 ### 📊 Log Levels
 - **DEBUG** (10%): Detailed debugging information
