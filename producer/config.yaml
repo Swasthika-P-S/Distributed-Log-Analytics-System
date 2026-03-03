@@ -6,12 +6,15 @@ kafka:
     - "kafka:29092"  # Docker internal
     - "localhost:9092"  # External access
   
-  # Topic configuration
-  topics:
-    web_server: "logs-web-server"
-    database: "logs-database"
-    api_gateway: "logs-api-gateway"
-    auth_service: "logs-auth-service"
+  # Topic configuration (Phase 0 Agreement: Use a single topic with 3 partitions)
+  topic: "service-logs"
+  
+  # Individual service keys (used for partitioning)
+  service_keys:
+    web_server: "web-server"
+    database: "database"
+    api_gateway: "api-gateway"
+    auth_service: "auth-service"
   
   # Producer settings for reliability
   producer_config:
