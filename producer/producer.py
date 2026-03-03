@@ -27,6 +27,13 @@ shutdown_event = Event()
 
 def load_config(config_path='config.yaml'):
     """Load configuration from YAML file"""
+    # If path is relative and doesn't exist, try looking in the script's directory
+    if not os.path.isabs(config_path) and not os.path.exists(config_path):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        potential_path = os.path.join(script_dir, config_path)
+        if os.path.exists(potential_path):
+            config_path = potential_path
+
     try:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)

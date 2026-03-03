@@ -28,8 +28,6 @@ class KafkaProducerWrapper:
         
         # Get bootstrap servers
         bootstrap_servers = kafka_config['bootstrap_servers']
-        if isinstance(bootstrap_servers, list):
-            bootstrap_servers = bootstrap_servers[0]  # Use first server
         
         # Initialize Kafka producer
         try:
