@@ -1,0 +1,104 @@
+# ============================================================
+#  .gitignore — Kafka Cluster Manager (Person 2)
+#  Covers: Python, Docker, Kafka data, OS & editor artifacts
+# ============================================================
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+coverage.xml
+*.cover
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── Kafka / Zookeeper data (never commit broker state) ───────
+kafka-logs/
+zookeeper-data/
+zookeeper-log/
+kafka-data/
+broker-*/data/
+*.kafka
+*.log
+
+# ── Docker ───────────────────────────────────────────────────
+# Keep docker-compose.yml but ignore local override files
+docker-compose.override.yml
+docker-compose.local.yml
+.docker/
+
+# ── Environment / Secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
+credentials/
+
+# ── OS artifacts ─────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ── Editor / IDE ─────────────────────────────────────────────
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, IntelliJ)
+.idea/
+*.iml
+*.iws
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+# ── Logs & temp output ───────────────────────────────────────
+logs/
+*.log
+*.log.*
+tmp/
+temp/
+.tmp/
+output/
+
+# ── Jupyter ──────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Pip / uv ─────────────────────────────────────────────────
+pip-log.txt
+pip-delete-this-directory.txt
