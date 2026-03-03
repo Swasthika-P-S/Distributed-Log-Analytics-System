@@ -91,8 +91,10 @@ Expected: `✅ REPLICATION HEALTH: PASS`
 
 ### Step 4 – Test produce & consume
 
-```bash
-# Install Python dependency first
+**Windows (PowerShell) — use a virtual environment:**
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install kafka-python==2.0.2
 
 # Send 20 test messages (Phase 0 schema, hash partitioning by service)
@@ -101,6 +103,18 @@ python scripts/test_produce.py
 # Read messages + validate Phase 0 schema
 python scripts/test_consume.py
 ```
+
+**Linux / WSL / macOS:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install kafka-python==2.0.2
+
+python scripts/test_produce.py
+python scripts/test_consume.py
+```
+
+> ⚠️ On Debian/Ubuntu 23+, bare `pip install` is blocked (PEP 668). Always use a venv.
 
 ---
 
@@ -155,6 +169,38 @@ df = spark.readStream \
     .option("startingOffsets", "latest") \
     .load()
 ```
+
+### For Person 4 (HDFS Storage)
+Kafka does **not** write to HDFS directly. Person 3 (Spark) reads from Kafka and writes to HDFS.
+Person 4 only needs to ensure the HDFS paths are ready:
+
+```bash
+# HDFS paths Person 3 will write to (Phase 0 contract)
+hdfs://namenode:9000/logs/YYYY/MM/DD/<service_name>/
+
+# Example actual paths:
+hdfs://namenode:9000/logs/2026/03/03/web_server/
+hdfs://namenode:9000/logs/2026/03/03/database/
+hdfs://namenode:9000/logs/2026/03/03/auth_service/
+```
+
+Files will be written as `.json` or `.parquet` by Spark.
+
+---
+
+## ✅ Live Verification Results (2026-03-03)
+
+Smoke test run against the live cluster — **all Phase 0 checks passed**:
+
+| Check | Result |
+|-------|--------|
+| Topic `service-logs` created | ✅ |
+| Partitions = 3 | ✅ (Leader: 1→P0, 2→P1, 3→P2) |
+| Replication factor = 2 | ✅ ISR = Replicas on all partitions |
+| Key strategy = service name hash | ✅ Same service → same partition every time |
+| 20 messages sent (Phase 0 schema) | ✅ |
+| 20 messages consumed & schema valid | ✅ 0 invalid |
+| Consumer group `spark-log-processor` | ✅ |
 
 ---
 
