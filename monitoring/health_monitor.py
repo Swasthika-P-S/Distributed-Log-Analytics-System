@@ -19,6 +19,18 @@ import yaml
 # Initialize colorama
 init(autoreset=True)
 
+# Ensure UTF-8 encoding for Windows terminals to handle emojis
+if sys.platform == 'win32':
+    import codecs
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    else:
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8')
+    else:
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+
 # Load configuration
 def load_config():
     config_path = os.path.join(os.path.dirname(__file__), 'config', 'monitor_config.yaml')
