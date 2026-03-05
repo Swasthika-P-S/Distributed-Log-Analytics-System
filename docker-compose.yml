@@ -158,6 +158,7 @@ services:
       - ./hadoop.env
     volumes:
       - namenode_data:/hadoop/dfs/name
+      - ./hdfs-cluster/setup_hdfs.sh:/setup_hdfs.sh
 
   datanode1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
@@ -196,8 +197,8 @@ services:
     environment:
       - SPARK_MODE=master
       - KAFKA_BROKER=broker-1:29092,broker-2:29093,broker-3:29094
-      - HDFS_URI=/tmp/spark-output/logs/
-      - CHECKPOINT_LOCATION=/tmp/spark-checkpoints
+      - HDFS_URI=hdfs://namenode:9000/logs/processed/
+      - CHECKPOINT_LOCATION=hdfs://namenode:9000/spark-checkpoints
       - ALERT_THRESHOLD=20
     ports:
       - "8080:8080"
