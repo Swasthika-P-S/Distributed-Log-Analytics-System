@@ -3,9 +3,9 @@
 kafka:
   # Broker addresses (update with Person 2's Kafka cluster IPs during integration)
   bootstrap_servers:
-    - "172.16.244.172:9092"
-    - "172.16.244.172:9093"
-    - "172.16.244.172:9094"
+    - "10.39.43.212:9092"
+    - "10.39.43.212:9093"
+    - "10.39.43.212:9094"
   
   # Topic configuration (Consolidated for Phase 0)
   topic: "service-logs"
