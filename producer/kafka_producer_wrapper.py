@@ -5,6 +5,7 @@ Handles Kafka producer initialization, batching, and error handling
 
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+import os
 import json
 import logging
 from typing import Dict, Any
@@ -26,8 +27,8 @@ class KafkaProducerWrapper:
         kafka_config = config['kafka']
         producer_config = kafka_config['producer_config']
         
-        # Get bootstrap servers
-        bootstrap_servers = kafka_config['bootstrap_servers']
+        # Get bootstrap servers - prioritize environment variable for Docker
+        bootstrap_servers = os.getenv("KAFKA_BROKER", kafka_config['bootstrap_servers'])
         
         # Initialize Kafka producer
         try:

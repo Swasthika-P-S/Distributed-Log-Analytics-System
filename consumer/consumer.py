@@ -6,7 +6,7 @@ import time
 time.sleep(15)
 
 # Connect to Kafka
-kafka_broker = os.getenv('KAFKA_BROKER', 'localhost:9092')
+kafka_broker = os.getenv('KAFKA_BROKER', '10.12.75.131:9092')
 consumer = KafkaConsumer(
     'logs',
     bootstrap_servers=kafka_broker,

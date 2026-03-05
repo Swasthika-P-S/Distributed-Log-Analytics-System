@@ -12,7 +12,7 @@ This component performs real-time analytics on logs consumed from Kafka and stor
 ## How it Works
 
 The Spark job uses **Structured Streaming** to:
-- Connect to the Kafka cluster at `10.12.75.131`.
+- Connect to the Kafka cluster at `172.16.244.172`.
 - Parse JSON logs according to the schema provided by Person 1.
 - Apply watermarking (2 minutes) to handle out-of-order data.
 - Execute parallel analytics queries and output to HDFS.

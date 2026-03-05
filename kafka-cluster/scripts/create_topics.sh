@@ -14,7 +14,7 @@
 
 set -e
 
-BOOTSTRAP="localhost:9092,localhost:9093,localhost:9094"
+BOOTSTRAP="10.12.75.131:9092,10.12.75.131:9093,10.12.75.131:9094"
 TOPIC="service-logs"          # Phase 0 contract
 PARTITIONS=3                  # Phase 0 contract — 3 Spark tasks in parallel
 REPLICATION_FACTOR=2          # Phase 0 contract — survive 1 broker failure

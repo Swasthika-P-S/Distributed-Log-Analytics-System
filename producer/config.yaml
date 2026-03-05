@@ -7,7 +7,7 @@ kafka:
     - "172.16.244.172:9093"
     - "172.16.244.172:9094"
   
-  # Topic configuration (Phase 0 Agreement: Use a single topic with 3 partitions)
+  # Topic configuration (Consolidated for Phase 0)
   topic: "service-logs"
   
   # Individual service keys (used for partitioning)

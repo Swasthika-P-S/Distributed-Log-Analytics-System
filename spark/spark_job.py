@@ -10,8 +10,8 @@ import time
 
 # Kafka Configuration
 # Internal Docker network addresses are used for stability within containers
-# Defaults to system IP 10.12.75.131 for external flexibility
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BROKER", "10.12.75.131:9092,10.12.75.131:9093,10.12.75.131:9094")
+# Defaults to Person 2's Kafka Cluster IP (172.16.244.172)
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BROKER", "172.16.244.172:9092,172.16.244.172:9093,172.16.244.172:9094")
 KAFKA_TOPIC = "service-logs"
 GROUP_ID = "spark-log-processor"
 

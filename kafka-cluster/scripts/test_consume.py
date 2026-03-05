@@ -29,7 +29,7 @@ except ImportError:
     sys.exit(1)
 
 # ── Phase 0 Constants ─────────────────────────────────────────────────────────
-BOOTSTRAP_SERVERS = "localhost:9092,localhost:9093,localhost:9094"
+BOOTSTRAP_SERVERS = "10.12.75.131:9092,10.12.75.131:9093,10.12.75.131:9094"
 TOPIC             = "service-logs"           # Phase 0 contract
 CONSUMER_GROUP    = "spark-log-processor"    # Phase 0 contract
 REQUIRED_FIELDS   = {"timestamp", "service", "level", "message", "metadata"}
