@@ -12,6 +12,12 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 def check_kafka_connection(brokers):
     """Check if Kafka brokers are reachable at the network level"""
     for broker in brokers:
@@ -33,8 +39,15 @@ def main():
         
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
-        
-    brokers = config['kafka']['bootstrap_servers']
+
+    # Prioritize KAFKA_BROKER env var, fall back to config.yaml
+    env_brokers = os.getenv('KAFKA_BROKER')
+    if env_brokers:
+        brokers = [b.strip() for b in env_brokers.split(',')]
+        logger.info(f"🌐 Using Kafka brokers from environment: {brokers}")
+    else:
+        brokers = config['kafka']['bootstrap_servers']
+        logger.info(f"📂 Using Kafka brokers from config: {brokers}")
     
     logger.info("Starting Person 1 Producer Health Check...")
     
