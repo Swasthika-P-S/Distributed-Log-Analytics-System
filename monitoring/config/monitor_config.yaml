@@ -1,0 +1,36 @@
+# Monitoring Configuration
+# Person 5: Fault Tolerance & Monitoring Coordinator
+
+kafka:
+  bootstrap_servers: "localhost:9092,localhost:9093,localhost:9094"
+  topic: "service-logs"
+  check_interval: 10  # seconds
+
+hdfs:
+  namenode_web_ui: "http://localhost:9870"
+  check_interval: 15  # seconds
+
+spark:
+  web_ui: "http://localhost:8080"
+  container_name: "spark-processor"
+  check_interval: 10  # seconds
+
+thresholds:
+  # Kafka thresholds
+  consumer_lag_warning: 500     # messages
+  consumer_lag_critical: 2000   # messages
+  
+  # HDFS thresholds
+  datanode_count_min: 2
+  replication_factor_min: 2
+  disk_usage_warning: 0.80      # 80%
+  disk_usage_critical: 0.90     # 90%
+  
+  # Spark thresholds
+  processing_delay_warning: 60   # seconds
+  processing_delay_critical: 300 # seconds
+
+monitoring:
+  refresh_interval: 30  # seconds for dashboard
+  log_retention_days: 7
+  metrics_retention_days: 30

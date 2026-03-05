@@ -1,0 +1,63 @@
+# Alert Rules Configuration
+# Person 5: Fault Tolerance & Monitoring Coordinator
+
+# Kafka Alert Rules
+kafka:
+  bootstrap_servers: "localhost:9092,localhost:9093,localhost:9094"
+  topic: "service-logs"
+
+# HDFS Alert Rules
+hdfs:
+  namenode_url: "http://localhost:9870"
+
+# Alert Thresholds
+thresholds:
+  # Consumer Lag
+  consumer_lag_warning: 500
+  consumer_lag_critical: 2000
+  
+  # Error Rates
+  error_rate_warning: 0.05    # 5%
+  error_rate_critical: 0.10   # 10%
+  
+  # HDFS Health
+  datanode_min: 2
+  replication_factor_min: 2
+  disk_usage_warning: 0.80
+  disk_usage_critical: 0.90
+  
+  # Spark Health
+  spark_restart_threshold: 3  # Max restarts in 1 hour
+
+# Alert Channels
+alert_channels:
+  console: true
+  file: true
+  email: false
+  slack: false
+
+# Email Configuration (if enabled)
+email:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  username: "your-email@example.com"
+  password: "your-password"
+  from_address: "alerts@example.com"
+  to_addresses:
+    - "team@example.com"
+
+# Slack Configuration (if enabled)
+slack:
+  webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+  channel: "#log-analytics-alerts"
+
+# Check Interval
+check_interval: 30  # seconds
+
+# Alert Suppression
+suppression:
+  # Don't re-alert for same issue within this time
+  duplicate_alert_window: 300  # seconds (5 minutes)
+  
+  # Auto-resolve alerts after this time if condition clears
+  auto_resolve_window: 120  # seconds (2 minutes)
