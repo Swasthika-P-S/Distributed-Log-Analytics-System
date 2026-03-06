@@ -99,18 +99,31 @@ def main():
             col("count").alias("total_logs")
         )
 
-    # --- TASK C: Anomaly Detection (Spike Detection) ---
-    # Flag events where log volume exceeds the threshold within a 1-minute window
+    # --- TASK C: Anomaly Detection (Enhanced Labeling for Demo) ---
+    # Categorize traffic into NORMAL, SPIKE, or SECURITY_ALERT
     anomalies = logs_df \
         .groupBy(window(col("timestamp"), "1 minute"), col("service")) \
-        .count() \
-        .filter(col("count") > ALERT_THRESHOLD) \
+        .agg(
+            count("*").alias("log_volume"),
+            # Specifically count "Login Failed" messages for brute-force detection
+            count(when(col("message").contains("Login Failed"), 1)).alias("security_events")
+        ) \
+        .withColumn("alert_type", 
+            when(col("security_events") > 20, "SECURITY_ALERT")
+            .when(col("log_volume") > ALERT_THRESHOLD, "SPIKE_DETECTED")
+            .otherwise("NORMAL")
+        ) \
+        .withColumn("alert_details",
+            when(col("alert_type") == "SECURITY_ALERT", lit("BRUTE-FORCE DETECTED: Multiple Login Failures"))
+            .when(col("alert_type") == "SPIKE_DETECTED", lit(f"HIGH TRAFFIC: Volume > {ALERT_THRESHOLD}/min"))
+            .otherwise(lit("TRAFFIC NORMAL: Monitoring active"))
+        ) \
         .select(
             col("window.start").alias("timestamp"),
             "service",
-            col("count").alias("log_volume"),
-            lit("SPIKE_DETECTED").alias("alert_type"),
-            lit(f"Log volume exceeded {ALERT_THRESHOLD}/min").alias("alert_details")
+            "log_volume",
+            "alert_type",
+            "alert_details"
         )
 
     # --------------------------------------------------------------------------
@@ -143,6 +156,13 @@ def main():
 
     # Write Anomalies to Console for immediate alerts
     q4 = anomalies.writeStream \
+        .outputMode("update") \
+        .format("console") \
+        .option("truncate", "false") \
+        .start()
+
+    # --- NEW: Write Service Trends to Console for Use Case 2 (Most Active Service) ---
+    q5 = service_trends.writeStream \
         .outputMode("update") \
         .format("console") \
         .option("truncate", "false") \

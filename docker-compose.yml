@@ -192,14 +192,16 @@ services:
       namenode:
         condition: service_started
     volumes:
-      - ./spark:/app
+      - ./spark:/opt/spark/work-dir
       - ./storage/logs:/logs
+      - spark_tmp:/tmp
     environment:
       - SPARK_MODE=master
       - KAFKA_BROKER=broker-1:29092,broker-2:29093,broker-3:29094
       - HDFS_URI=hdfs://namenode:9000/logs/processed/
-      - CHECKPOINT_LOCATION=hdfs://namenode:9000/spark-checkpoints
-      - ALERT_THRESHOLD=20
+      - CHECKPOINT_LOCATION=hdfs://namenode:9000/spark-checkpoints-v2/
+      - ALERT_THRESHOLD=100
+      - SPARK_DRIVER_MEMORY=1g
     ports:
       - "8080:8080"
       - "7077:7077"
@@ -213,6 +215,7 @@ volumes:
   namenode_data:
   datanode1_data:
   datanode2_data:
+  spark_tmp:
 
 
 networks:

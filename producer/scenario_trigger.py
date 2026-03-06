@@ -53,34 +53,36 @@ def send_log(producer, service, level, message, metadata=None):
 def scenario_1_error_spike():
     print("\n🚀 TRIGGERING USE CASE 1: Error Spike Detection (PaymentService)")
     producer = get_producer()
-    for i in range(50):
+    print("Sending spike of 200 errors...")
+    for i in range(200):
         send_log(producer, "payment-service", "ERROR", "Transaction Failed: Timeout reaching bank gateway")
-        time.sleep(0.1)
+        if i % 10 == 0: time.sleep(0.01) # Blast them out fast
     producer.flush()
-    print("✅ Burst of 50 errors sent. Watch Spark console for 'SPIKE_DETECTED'!")
+    print("✅ Burst of 200 errors sent. Watch Spark console for 'SPIKE_DETECTED'!")
 
 def scenario_2_active_service():
     print("\n🚀 TRIGGERING USE CASE 2: Most Active Service Monitoring")
     producer = get_producer()
-    print("Sending high volume logs for 'auth-service'...")
-    for i in range(100):
+    print("Sending high volume logs for 'auth-service' (250)...")
+    for i in range(250):
         send_log(producer, "auth-service", "INFO", "User login successful", {"user_id": f"user_{i}"})
     
-    print("\nSending medium volume logs for 'order-service'...")
-    for i in range(40):
+    print("\nSending medium volume logs for 'order-service' (50)...")
+    for i in range(50):
         send_log(producer, "order-service", "INFO", "Order created successfully", {"order_id": f"order_{i}"})
     
     producer.flush()
-    print("✅ Volume logs sent. Check Spark trends or HDFS '/logs/processed/service_trends'!")
+    print("✅ Volume logs sent (250 vs 50). Check Spark trends or HDFS '/logs/processed/service_trends'!")
 
 def scenario_3_security_threat():
     print("\n🚀 TRIGGERING USE CASE 3: Security Threat Detection (Brute Force)")
     producer = get_producer()
-    for i in range(40):
+    print("Sending brute-force attempt (150 logs)...")
+    for i in range(150):
         send_log(producer, "auth-service", "WARN", "Login Failed - user=admin", {"ip": "192.168.1.105"})
-        time.sleep(0.05)
+        time.sleep(0.01)
     producer.flush()
-    print("✅ Brute force attempt simulated. Watch Spark console for 'SPIKE_DETECTED' on auth-service!")
+    print("✅ Brute force attempt simulated. Watch Spark console for 'SECURITY_ALERT' on auth-service!")
 
 if __name__ == "__main__":
     print("Select a scenario to trigger:")

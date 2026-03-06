@@ -73,22 +73,21 @@ python producer\scenario_trigger.py
 ```
 
 ### **Use Case 1: Error Spike Detection**
-- **Trigger**: Select **Option 1** in the script.
-- **Monitor**: Watch the `spark-processor` logs (cmd: `docker-compose logs -f spark`).
-- **Explanation**: Spark detects > 20 errors/min and triggers a `SPIKE_DETECTED` alert in the console.
+- **Trigger**: Select **Option 1** (Sends 200 ERROR logs).
+- **Monitor**: Watch the `spark-processor` console (`docker-compose logs -f spark`).
+- **Explanation**: Spark detects volume > 100/min and triggers a `SPIKE_DETECTED` alert.
+- **Visual**: Point to the `alert_type` column switching from `NORMAL` to `SPIKE_DETECTED`.
 
-### **Use Case 2: Most Active Service**
-- **Trigger**: Select **Option 2** (Sends 100 logs for Auth, 40 for Order).
-- **Monitor**:
-    ```powershell
-    docker exec namenode hdfs dfs -tail /logs/processed/service_trends/part...json
-    ```
-- **Explanation**: HDFS storage updates to show that `auth-service` is the high-load bottleneck.
+### **Use Case 2: Active Service Trend (Hottest Component)**
+- **Trigger**: Select **Option 2** (Sends 250 INFO logs for Auth, 50 for Order).
+- **Monitor**: Look at the **Service Trends Table** in the Spark console.
+- **Explanation**: Shows live aggregation. Point out that `auth-service` (250) is the "Hottest" component compared to others.
+- **Visual**: The console will show two tables; point to the one showing totals per service.
 
-### **Use Case 3: Security Threat (Brute Force)**
-- **Trigger**: Select **Option 3** (Simulates 40 failed login attempts on 'admin').
-- **Monitor**: Watch for a spike alert in Spark specifically for `auth-service`.
-- **Explanation**: Demonstrates how real-time monitoring can catch potential attacks before they scale.
+### **Use Case 3: Security Threat (Brute Force Detection)**
+- **Trigger**: Select **Option 3** (Simulates 150 "Login Failed" attempts).
+- **Monitor**: Watch the `alert_type` column for `SECURITY_ALERT`.
+- **Explanation**: Even though 150 is less than Scenario 2's volume, the system detects the "Login Failed" content and escalates to a Security Alert.
 
 ---
 
